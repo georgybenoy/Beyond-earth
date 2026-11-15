@@ -81,6 +81,10 @@ const certModalContent = fs.readFileSync('./client/src/components/academy/Printa
 assert(certModalContent.includes('role="dialog"') && certModalContent.includes('aria-modal="true"'), 'PrintableCertificateModal uses proper WAI-ARIA modal dialog roles');
 assert(certModalContent.includes("e.key === 'Escape'"), 'PrintableCertificateModal supports Escape to close');
 
+const carouselContent = fs.readFileSync('./client/src/components/hardware/FlagshipCarousel.jsx', 'utf8');
+assert(carouselContent.includes('isPaused') && carouselContent.includes('aria-label'), 'FlagshipCarousel implements WCAG 2.2.2 Pause/Play controls');
+assert(carouselContent.includes('onPointerEnter') || carouselContent.includes('onMouseEnter'), 'FlagshipCarousel pauses on hover/focus');
+
 // 3. CODE SPLITTING & PERFORMANCE AUDIT
 console.log('\n3. Auditing Route-level Lazy Loading and Image Optimizations...');
 assert(appContent.includes('React.lazy') || appContent.includes('lazy('), 'App.jsx utilizes React.lazy for route splitting');

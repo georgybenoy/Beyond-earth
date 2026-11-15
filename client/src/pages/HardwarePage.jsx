@@ -1,75 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { Search, Filter, Cpu, ArrowUpDown, RefreshCw, Radio, Camera, Compass } from 'lucide-react';
-import { api } from '../services/api';
 import StatusBadge from '../components/common/StatusBadge';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import FlagshipCarousel from '../components/hardware/FlagshipCarousel';
+import { useHardwareCatalog } from '../hooks/useHardwareCatalog';
 
 export default function HardwarePage() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const urlDestination = searchParams.get('destination') || '';
-
-  const [hardware, setHardware] = useState([]);
-  const [destinations, setDestinations] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // Filters
-  const [search, setSearch] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('');
-  const [selectedDestination, setSelectedDestination] = useState(urlDestination);
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [sortBy, setSortBy] = useState('launch_date:asc');
-
-  // Synchronize state with URL search params if user navigates with query
-  useEffect(() => {
-    if (urlDestination) {
-      setSelectedDestination(urlDestination);
-    }
-  }, [urlDestination]);
-
-  useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      try {
-        const [hwList, destList] = await Promise.all([
-          api.getHardware({
-            search,
-            status: selectedStatus,
-            destination: selectedDestination,
-            category: selectedCategory,
-            sort: sortBy
-          }),
-          api.getDestinations()
-        ]);
-        setHardware(hwList || []);
-        setDestinations(destList || []);
-      } catch (err) {
-        console.error('Failed to load hardware catalog:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadData();
-  }, [search, selectedStatus, selectedDestination, selectedCategory, sortBy]);
-
-  const handleDestinationChange = (slug) => {
-    setSelectedDestination(slug);
-    if (slug) {
-      setSearchParams({ destination: slug });
-    } else {
-      setSearchParams({});
-    }
-  };
-
-  const resetFilters = () => {
-    setSearch('');
-    setSelectedStatus('');
-    setSelectedDestination('');
-    setSelectedCategory('');
-    setSortBy('launch_date:asc');
-    setSearchParams({});
-  };
+  const {
+    hardware,
+    destinations,
+    loading,
+    error,
+    search,
+    setSearch,
+    selectedStatus,
+    setSelectedStatus,
+    selectedDestination,
+    handleDestinationChange,
+    selectedCategory,
+    setSelectedCategory,
+    sortBy,
+    setSortBy,
+    resetFilters
+  } = useHardwareCatalog();
 
   return (
     <div className="min-h-screen pt-24 pb-16 bg-deep-space">

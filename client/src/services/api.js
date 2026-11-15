@@ -1,6 +1,6 @@
-const API_BASE = import.meta.env.VITE_API_URL 
-  ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api/v1` 
-  : '/api/v1';
+import { APP_CONFIG } from '../config/appConfig';
+
+const API_BASE = APP_CONFIG.apiBaseUrl;
 
 // In-flight request deduplication map to prevent duplicate wire calls during simultaneous component mounts
 const inFlightRequests = new Map();

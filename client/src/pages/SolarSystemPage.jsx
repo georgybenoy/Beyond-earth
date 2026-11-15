@@ -19,54 +19,22 @@ import { api } from '../services/api';
 import StatusBadge from '../components/common/StatusBadge';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import SolarSystemCanvas from '../components/3d/SolarSystemCanvas';
-import { DEFAULT_DESTINATIONS, DEFAULT_DESTINATION_HARDWARE } from '../data/defaultDestinations';
+import { useSolarSystemNavigation } from '../hooks/useSolarSystemNavigation';
 
 export default function SolarSystemPage() {
-  const [destinations, setDestinations] = useState(DEFAULT_DESTINATIONS);
-  const [selectedDest, setSelectedDest] = useState(null); // Neutral initial state (no celestial body selected by default)
-  const [loading, setLoading] = useState(false);
-  const [activeHardwareList, setActiveHardwareList] = useState([]);
-  const [loadingHardware, setLoadingHardware] = useState(false);
-  const [viewMode, setViewMode] = useState('3d'); // '3d', 'schematic', 'grid'
-  const [isResetView, setIsResetView] = useState(false);
-
-  useEffect(() => {
-    async function loadDestinations() {
-      try {
-        const data = await api.getDestinations();
-        if (data && data.length > 0) {
-          setDestinations(data);
-          setSelectedDest(prev => {
-            if (!prev) return null; // Retain full overview neutral state on fresh load
-            return data.find(d => d.slug === prev.slug) || prev;
-          });
-        }
-      } catch (err) {
-        console.warn('Using local planetary ephemeris (API unreachable):', err);
-      }
-    }
-    loadDestinations();
-  }, []);
-
-  const handleSelectDestination = async (dest) => {
-    setSelectedDest(dest);
-    setLoadingHardware(true);
-    try {
-      const detailed = await api.getDestination(dest.slug);
-      setActiveHardwareList(detailed.hardware || DEFAULT_DESTINATION_HARDWARE[dest.slug] || []);
-    } catch (err) {
-      console.warn('Falling back to local hardware manifest:', err);
-      setActiveHardwareList(DEFAULT_DESTINATION_HARDWARE[dest.slug] || []);
-    } finally {
-      setLoadingHardware(false);
-    }
-  };
-
-  const handleResetCamera = () => {
-    setSelectedDest(null);
-    setActiveHardwareList([]);
-    setIsResetView(true);
-  };
+  const {
+    destinations,
+    selectedDest,
+    setSelectedDest,
+    activeHardwareList,
+    loadingHardware,
+    viewMode,
+    setViewMode,
+    isResetView,
+    handleSelectDestination,
+    handleResetCamera,
+    handleResetComplete
+  } = useSolarSystemNavigation();
 
   return (
     <div className="min-h-screen pt-24 pb-16 bg-deep-space relative">

@@ -2,11 +2,37 @@ const API_BASE = import.meta.env.VITE_API_URL
   ? `${import.meta.env.VITE_API_URL.replace(/\/$/, '')}/api/v1` 
   : '/api/v1';
 
+// In-flight request deduplication map to prevent duplicate wire calls during simultaneous component mounts
+const inFlightRequests = new Map();
+
 async function fetchJSON(endpoint) {
-  try {
-    const res = await fetch(`${API_BASE}${endpoint}`);
-    if (!res.ok) {
-      // If direct remote API returned error status and API_BASE is remote, fallback to Vercel edge proxy
+  if (inFlightRequests.has(endpoint)) {
+    return inFlightRequests.get(endpoint);
+  }
+
+  const requestPromise = (async () => {
+    try {
+      const res = await fetch(`${API_BASE}${endpoint}`);
+      if (!res.ok) {
+        // If direct remote API returned error status and API_BASE is remote, fallback to Vercel edge proxy
+        if (API_BASE.startsWith('http')) {
+          try {
+            const fallbackRes = await fetch(`/api/v1${endpoint}`);
+            if (fallbackRes.ok) {
+              const fallbackJson = await fallbackRes.json();
+              return fallbackJson.data;
+            }
+          } catch {
+            // Fall through to error
+          }
+        }
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || `Request failed with status ${res.status}`);
+      }
+      const json = await res.json();
+      return json.data;
+    } catch (error) {
+      // If browser CORS or network error occurred and API_BASE is remote, fallback to Vercel edge proxy
       if (API_BASE.startsWith('http')) {
         try {
           const fallbackRes = await fetch(`/api/v1${endpoint}`);
@@ -15,30 +41,18 @@ async function fetchJSON(endpoint) {
             return fallbackJson.data;
           }
         } catch {
-          // Fall through to error
+          // Fallback also failed
         }
       }
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.message || `Request failed with status ${res.status}`);
+      console.error(`API Error on ${endpoint}:`, error);
+      throw error;
+    } finally {
+      inFlightRequests.delete(endpoint);
     }
-    const json = await res.json();
-    return json.data;
-  } catch (error) {
-    // If browser CORS or network error occurred and API_BASE is remote, fallback to Vercel edge proxy
-    if (API_BASE.startsWith('http')) {
-      try {
-        const fallbackRes = await fetch(`/api/v1${endpoint}`);
-        if (fallbackRes.ok) {
-          const fallbackJson = await fallbackRes.json();
-          return fallbackJson.data;
-        }
-      } catch {
-        // Fallback also failed
-      }
-    }
-    console.error(`API Error on ${endpoint}:`, error);
-    throw error;
-  }
+  })();
+
+  inFlightRequests.set(endpoint, requestPromise);
+  return requestPromise;
 }
 
 export const api = {

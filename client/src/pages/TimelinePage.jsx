@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { History, Radio, Sparkles } from 'lucide-react';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import ErrorBanner from '../components/common/ErrorBanner';
 
 import GrandTourHero from '../components/timeline/GrandTourHero';
 import DecadeNavigator from '../components/timeline/DecadeNavigator';
@@ -16,6 +17,7 @@ export default function TimelinePage() {
     destinations,
     hardwareList,
     loading,
+    error,
     countsByEra,
     selectedEra,
     handleEraSelect,
@@ -34,7 +36,8 @@ export default function TimelinePage() {
     sortBy,
     setSortBy,
     updateUrlParams,
-    resetAllFilters
+    resetAllFilters,
+    reload
   } = useTimelineMilestones();
 
   // Modal State
@@ -150,7 +153,14 @@ export default function TimelinePage() {
         )}
 
         {/* Chronological Timeline Stream */}
-        {loading ? (
+        {error ? (
+          <ErrorBanner
+            title="Timeline Telemetry Unavailable"
+            message={error}
+            onRetry={reload}
+            retryLabel="Retry Timeline Sync"
+          />
+        ) : loading ? (
           <LoadingSpinner message="Reconstructing NASA flight chronology and archival mission records..." />
         ) : milestones.length === 0 ? (
           <div className="glass-panel p-12 text-center rounded-3xl border border-space-border text-slate-400 text-sm">

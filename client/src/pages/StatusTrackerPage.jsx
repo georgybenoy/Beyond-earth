@@ -14,28 +14,35 @@ import {
 import { api } from '../services/api';
 import StatusBadge from '../components/common/StatusBadge';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import ErrorBanner from '../components/common/ErrorBanner';
+import { humanizeEnum } from '../utils/formatters';
 
 export default function StatusTrackerPage() {
   const [summary, setSummary] = useState(null);
   const [radarItems, setRadarItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filterStatus, setFilterStatus] = useState('');
 
-  useEffect(() => {
-    async function loadStatus() {
-      try {
-        const [sum, radar] = await Promise.all([
-          api.getStatusSummary(),
-          api.getStatusRadar()
-        ]);
-        setSummary(sum);
-        setRadarItems(radar || []);
-      } catch (err) {
-        console.error('Failed to load status radar:', err);
-      } finally {
-        setLoading(false);
-      }
+  const loadStatus = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [sum, radar] = await Promise.all([
+        api.getStatusSummary(),
+        api.getStatusRadar()
+      ]);
+      setSummary(sum);
+      setRadarItems(radar || []);
+    } catch (err) {
+      console.error('Failed to load status radar:', err);
+      setError(err.message || 'Deep space telemetry network link failed.');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadStatus();
   }, []);
 
@@ -72,7 +79,14 @@ export default function StatusTrackerPage() {
           </div>
         </div>
 
-        {loading ? (
+        {error ? (
+          <ErrorBanner
+            title="Telemetry Status Radar Unavailable"
+            message={error}
+            onRetry={loadStatus}
+            retryLabel="Retry DSN Telemetry Sync"
+          />
+        ) : loading ? (
           <LoadingSpinner message="Auditing deep space telemetry and DSN communication links..." />
         ) : (
           <div>
@@ -180,7 +194,7 @@ export default function StatusTrackerPage() {
                       </h3>
                       <StatusBadge status={item.operational_status} size="sm" />
                       <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 text-slate-300">
-                        {item.category.replace(/_/g, ' ')}
+                        {humanizeEnum(item.category)}
                       </span>
                     </div>
 

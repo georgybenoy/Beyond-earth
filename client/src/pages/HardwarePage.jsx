@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Filter, Cpu, ArrowUpDown, RefreshCw, Radio, Camera, Compass } from 'lucide-react';
+import { Filter, Cpu, ArrowUpDown, RefreshCw, Radio, Camera, Compass } from 'lucide-react';
 import StatusBadge from '../components/common/StatusBadge';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import ErrorBanner from '../components/common/ErrorBanner';
+import SearchInput from '../components/common/SearchInput';
 import FlagshipCarousel from '../components/hardware/FlagshipCarousel';
 import { useHardwareCatalog } from '../hooks/useHardwareCatalog';
 
@@ -22,7 +24,8 @@ export default function HardwarePage() {
     setSelectedCategory,
     sortBy,
     setSortBy,
-    resetFilters
+    resetFilters,
+    reload
   } = useHardwareCatalog();
 
   return (
@@ -50,15 +53,12 @@ export default function HardwarePage() {
         <div className="glass-panel p-5 rounded-2xl mb-8 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
             {/* Search Input */}
-            <div className="md:col-span-5 relative">
-              <Search className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                aria-label="Search spacecraft catalog by name, mission, or payload"
+            <div className="md:col-span-5">
+              <SearchInput
+                ariaLabel="Search spacecraft catalog by name, mission, or payload"
                 placeholder="Search spacecraft (e.g. Voyager, Perseverance, laser)..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-space-navy/80 border border-purple-500/25 rounded-xl text-sm text-white placeholder-slate-400 focus-ring"
+                onChange={setSearch}
               />
             </div>
 
@@ -153,7 +153,14 @@ export default function HardwarePage() {
         </div>
 
         {/* Catalog Grid */}
-        {loading ? (
+        {error ? (
+          <ErrorBanner
+            title="Hardware Catalog Telemetry Unavailable"
+            message={error}
+            onRetry={reload}
+            retryLabel="Retry Telemetry Link"
+          />
+        ) : loading ? (
           <LoadingSpinner message="Scanning NASA hardware catalog..." />
         ) : hardware.length === 0 ? (
           <div className="text-center py-20 glass-panel rounded-2xl">

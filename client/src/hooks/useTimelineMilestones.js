@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../services/api';
 import { DECADE_CONFIG } from '../components/timeline/DecadeNavigator';
+import { getDecadeFromDate } from '../utils/dateUtils';
 
 /**
  * Custom hook to manage historical timeline milestones, filters, and URL query synchronization
@@ -62,17 +63,7 @@ export function useTimelineMilestones() {
     const counts = { '': allMilestonesUnfiltered.length };
     DECADE_CONFIG.forEach(d => {
       if (!d.id) return;
-      const count = allMilestonesUnfiltered.filter(m => {
-        const yr = parseInt(m.date.split('-')[0], 10);
-        if (d.id === '1960s') return yr >= 1960 && yr < 1970;
-        if (d.id === '1970s') return yr >= 1970 && yr < 1980;
-        if (d.id === '1980s') return yr >= 1980 && yr < 1990;
-        if (d.id === '1990s') return yr >= 1990 && yr < 2000;
-        if (d.id === '2000s') return yr >= 2000 && yr < 2010;
-        if (d.id === '2010s') return yr >= 2010 && yr < 2020;
-        if (d.id === '2020s') return yr >= 2020;
-        return true;
-      }).length;
+      const count = allMilestonesUnfiltered.filter(m => getDecadeFromDate(m.date) === d.id).length;
       counts[d.id] = count;
     });
     return counts;
@@ -89,31 +80,32 @@ export function useTimelineMilestones() {
   }, [searchParams, setSearchParams]);
 
   // Fetch timeline milestones whenever filters change
-  useEffect(() => {
-    async function fetchFilteredTimeline() {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await api.getTimeline({
-          era: selectedEra,
-          destination: selectedDestination,
-          hardware_slug: selectedHardware,
-          event_type: selectedEventType,
-          category: selectedCategory,
-          search,
-          major_only: majorOnly ? 'true' : undefined,
-          sort: sortBy
-        });
-        setMilestones(data || []);
-      } catch (err) {
-        console.error('Failed to load timeline milestones:', err);
-        setError(err.message || 'Timeline archive request failed');
-      } finally {
-        setLoading(false);
-      }
+  const fetchFilteredTimeline = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await api.getTimeline({
+        era: selectedEra,
+        destination: selectedDestination,
+        hardware_slug: selectedHardware,
+        event_type: selectedEventType,
+        category: selectedCategory,
+        search,
+        major_only: majorOnly ? 'true' : undefined,
+        sort: sortBy
+      });
+      setMilestones(data || []);
+    } catch (err) {
+      console.error('Failed to load timeline milestones:', err);
+      setError(err.message || 'Timeline archive request failed');
+    } finally {
+      setLoading(false);
     }
-    fetchFilteredTimeline();
   }, [selectedEra, selectedDestination, selectedHardware, selectedEventType, selectedCategory, search, majorOnly, sortBy]);
+
+  useEffect(() => {
+    fetchFilteredTimeline();
+  }, [fetchFilteredTimeline]);
 
   const handleEraSelect = useCallback((era) => {
     setSelectedEra(era);
@@ -156,6 +148,7 @@ export function useTimelineMilestones() {
     sortBy,
     setSortBy,
     updateUrlParams,
-    resetAllFilters
+    resetAllFilters,
+    reload: fetchFilteredTimeline
   };
 }

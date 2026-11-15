@@ -1,5 +1,6 @@
 import React from 'react';
-import { Search, Filter, RefreshCw, ArrowUpDown, Sparkles, Compass, Rocket } from 'lucide-react';
+import { Filter, RefreshCw, ArrowUpDown, Sparkles, Compass, Rocket } from 'lucide-react';
+import SearchInput from '../common/SearchInput';
 
 const EVENT_TYPES = [
   { id: '', label: 'All Event Types' },
@@ -43,15 +44,12 @@ export default function TimelineFilters({
       {/* Row 1: Search & Dropdown Matrix */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
         {/* Search */}
-        <div className="md:col-span-4 relative">
-          <Search className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            aria-label="Search flight timeline milestones, craft, or discoveries"
+        <div className="md:col-span-4">
+          <SearchInput
+            ariaLabel="Search flight timeline milestones, craft, or discoveries"
             placeholder="Search milestones, craft, or discoveries..."
             value={search}
-            onChange={(e) => onFilterChange('search', e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-space-navy/80 border border-purple-500/25 rounded-xl text-sm text-white placeholder-slate-400 focus-ring"
+            onChange={(val) => onFilterChange('search', val)}
           />
         </div>
 

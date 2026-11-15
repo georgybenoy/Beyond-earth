@@ -44,12 +44,31 @@ Designed for students, educators, and space enthusiasts, this digital museum con
 
 ```text
 beyond-earth/
-├── client/          # React + Vite frontend application
-├── server/          # Node.js + Express backend REST API
-│   └── data/        # NASA mission catalog & quiz seed data
-├── docs/            # Architecture specifications & scientific references
-└── README.md        # Project documentation
+├── client/                  # React + Vite frontend application
+│   └── src/
+│       ├── components/      # UI components (3D canvas, common, hardware, timeline, academy)
+│       ├── config/          # Centralized client configuration
+│       ├── context/         # React Context state management (CadetContext)
+│       ├── hooks/           # Custom domain hooks (catalog, timeline, 3D navigation)
+│       ├── pages/           # Lazy-loaded route views
+│       ├── services/        # API client with in-flight deduplication
+│       └── utils/           # Date & number formatters
+├── server/                  # Node.js + Express backend REST API
+│   └── src/
+│       ├── config/          # Environment configuration
+│       ├── controllers/     # HTTP endpoint handlers
+│       ├── data/            # NASA seed files & in-memory O(1) seedStore
+│       ├── middleware/      # Rate limiter, errorHandler, asyncHandler
+│       ├── routes/          # Express route definitions
+│       └── services/        # Pure business logic layer
+├── docs/                    # Architecture specifications & scientific references
+│   └── ARCHITECTURE.md      # Detailed system architecture & engineering guide
+├── tests/                   # Automated API contract & seed integrity test suites
+├── test_phase8_validation.js # Automated accessibility & security audit suite
+└── README.md                # Project documentation
 ```
+
+For complete technical specifications, review [ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ---
 
@@ -60,7 +79,16 @@ beyond-earth/
 - **Node.js** (v18.0.0 or higher recommended)
 - **npm** (v9.0.0 or higher)
 
-### 1. Backend Server Setup
+### 1. Root & Test Setup
+
+To run the complete automated validation, API contract, and NASA seed integrity suites:
+
+```bash
+npm install
+npm test
+```
+
+### 2. Backend Server Setup
 
 ```bash
 cd server
@@ -70,7 +98,7 @@ npm run dev
 
 The server will start on `http://localhost:5000`.
 
-### 2. Frontend Client Setup
+### 3. Frontend Client Setup
 
 ```bash
 cd client

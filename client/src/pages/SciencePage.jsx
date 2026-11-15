@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import LoadingSpinner from '../components/common/LoadingSpinner';
+import ErrorBanner from '../components/common/ErrorBanner';
 
 export default function SciencePage() {
   const [concepts, setConcepts] = useState([]);
@@ -21,23 +22,27 @@ export default function SciencePage() {
   const [activeTab, setActiveTab] = useState('concepts'); // 'concepts' or 'discoveries'
   const [selectedDomain, setSelectedDomain] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const loadScienceData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [conceptData, discoveryData] = await Promise.all([
+        api.getConcepts(),
+        api.getDiscoveries(selectedDomain)
+      ]);
+      setConcepts(conceptData || []);
+      setDiscoveries(discoveryData || []);
+    } catch (err) {
+      console.error('Failed to load science data:', err);
+      setError(err.message || 'Failed to retrieve STEM science modules.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function loadScienceData() {
-      setLoading(true);
-      try {
-        const [conceptData, discoveryData] = await Promise.all([
-          api.getConcepts(),
-          api.getDiscoveries(selectedDomain)
-        ]);
-        setConcepts(conceptData || []);
-        setDiscoveries(discoveryData || []);
-      } catch (err) {
-        console.error('Failed to load science data:', err);
-      } finally {
-        setLoading(false);
-      }
-    }
     loadScienceData();
   }, [selectedDomain]);
 
@@ -93,7 +98,14 @@ export default function SciencePage() {
           </button>
         </div>
 
-        {loading ? (
+        {error ? (
+          <ErrorBanner
+            title="Science Center Telemetry Unavailable"
+            message={error}
+            onRetry={loadScienceData}
+            retryLabel="Retry Learning Modules Sync"
+          />
+        ) : loading ? (
           <LoadingSpinner message="Translating complex astrophysics into student explainers..." />
         ) : activeTab === 'concepts' ? (
           /* Engineering Concepts View */

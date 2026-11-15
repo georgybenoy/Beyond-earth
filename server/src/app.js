@@ -26,31 +26,11 @@ app.use(helmet({
   contentSecurityPolicy: false // API does not serve HTML; client manages CSP
 }));
 
-// Explicit trusted origins
-const explicitOrigins = [
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  'http://localhost:4173',
-  'http://127.0.0.1:4173',
-  'https://beyond-earth-ten.vercel.app',
-  'https://beyond-earth.vercel.app'
-];
-
-if (config.clientUrl) {
-  // Support comma-separated URLs and strip trailing slashes
-  config.clientUrl.split(',').forEach(url => {
-    const trimmed = url.trim().replace(/\/$/, '');
-    if (trimmed && !explicitOrigins.includes(trimmed)) {
-      explicitOrigins.push(trimmed);
-    }
-  });
-}
-
 // Hardened CORS: explicit origins, no ambient credentials required for public API
 app.use(cors({
   origin: (origin, callback) => {
     // Allow non-browser requests (mobile apps, curl, server-to-server) or local development
-    if (!origin || config.nodeEnv === 'development' || explicitOrigins.includes(origin)) {
+    if (!origin || config.isDev || config.allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
     // Allow project-specific Vercel preview deployments (beyond-earth*.vercel.app)
@@ -65,7 +45,7 @@ app.use(cors({
 }));
 
 // Bound request body size to prevent payload exhaustion
-app.use(express.json({ limit: '100kb' }));
+app.use(express.json({ limit: config.bodyLimit }));
 
 if (config.nodeEnv !== 'test') {
   app.use(morgan('dev'));

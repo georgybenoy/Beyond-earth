@@ -1,13 +1,4 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const hardwarePath = path.join(__dirname, '../../data/hardware_seeds.json');
-const destinationsPath = path.join(__dirname, '../../data/destinations_seeds.json');
-
-const readJSON = (filePath) => JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+import { seedStore } from '../data/seedStore.js';
 
 // Curated educational contexts for the pivotal landmark milestones
 const MAJOR_MILESTONES = {
@@ -112,9 +103,8 @@ export const getTimelineMilestones = (req, res, next) => {
       sort = 'asc' 
     } = req.query;
 
-    const hardwareList = readJSON(hardwarePath);
-    const destinations = readJSON(destinationsPath);
-    const destMap = Object.fromEntries(destinations.map(d => [d.slug, d.name]));
+    const hardwareList = seedStore.getRawHardware();
+    const destMap = seedStore.getDestMap();
 
     // Aggregate all milestones across all hardware missions
     let milestones = [];

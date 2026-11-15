@@ -1,17 +1,8 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const sciencePath = path.join(__dirname, '../../data/science_seeds.json');
-const hardwarePath = path.join(__dirname, '../../data/hardware_seeds.json');
-
-const readJSON = (filePath) => JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+import { seedStore } from '../data/seedStore.js';
 
 export const getAllConcepts = (req, res, next) => {
   try {
-    const concepts = readJSON(sciencePath);
+    const concepts = seedStore.getRawScience();
     res.json({
       success: true,
       data: concepts,
@@ -25,8 +16,7 @@ export const getAllConcepts = (req, res, next) => {
 export const getConceptBySlug = (req, res, next) => {
   try {
     const { slug } = req.params;
-    const concepts = readJSON(sciencePath);
-    const concept = concepts.find(c => c.slug.toLowerCase() === slug.toLowerCase());
+    const concept = seedStore.getScienceBySlug(slug);
 
     if (!concept) {
       return res.status(404).json({
@@ -36,7 +26,7 @@ export const getConceptBySlug = (req, res, next) => {
     }
 
     // Enrich with associated hardware details
-    const hardwareList = readJSON(hardwarePath);
+    const hardwareList = seedStore.getRawHardware();
     const relatedHardware = hardwareList.filter(h =>
       concept.related_hardware_slugs && concept.related_hardware_slugs.includes(h.slug)
     );
@@ -56,7 +46,7 @@ export const getConceptBySlug = (req, res, next) => {
 export const getAllDiscoveries = (req, res, next) => {
   try {
     const { domain } = req.query;
-    const hardwareList = readJSON(hardwarePath);
+    const hardwareList = seedStore.getRawHardware();
 
     let discoveries = [];
     hardwareList.forEach(h => {

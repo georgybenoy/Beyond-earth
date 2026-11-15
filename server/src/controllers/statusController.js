@@ -1,32 +1,8 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const hardwarePath = path.join(__dirname, '../../data/hardware_seeds.json');
-
-const readJSON = (filePath) => JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+import { seedStore } from '../data/seedStore.js';
 
 export const getStatusSummary = (req, res, next) => {
   try {
-    const hardware = readJSON(hardwarePath);
-
-    const counts = {
-      TOTAL_TRACKED: hardware.length,
-      OPERATIONAL: 0,
-      INACTIVE_SURFACE: 0,
-      DEEP_SPACE_TRAVELLING: 0,
-      ATMOSPHERIC_ENTRY_DESTROYED: 0,
-      SURFACE_IMPACT_DESTROYED: 0,
-      LOST_CONTACT: 0
-    };
-
-    hardware.forEach(h => {
-      if (counts[h.operational_status] !== undefined) {
-        counts[h.operational_status] += 1;
-      }
-    });
+    const counts = seedStore.getStatusCounts();
 
     res.json({
       success: true,
@@ -43,7 +19,7 @@ export const getStatusSummary = (req, res, next) => {
 
 export const getStatusRadar = (req, res, next) => {
   try {
-    const hardware = readJSON(hardwarePath);
+    const hardware = seedStore.getRawHardware();
 
     const radarItems = hardware.map(h => ({
       slug: h.slug,

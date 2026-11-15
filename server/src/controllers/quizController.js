@@ -1,21 +1,13 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const quizPath = path.join(__dirname, '../../data/quiz_seeds.json');
-const simulationPath = path.join(__dirname, '../../data/simulation_seeds.json');
-
-const readJSON = (filePath) => JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+import { seedStore } from '../data/seedStore.js';
 
 export const getAllQuizzes = (req, res, next) => {
   try {
     const { difficulty } = req.query;
-    let quizzes = readJSON(quizPath);
+    let quizzes = seedStore.getRawQuizzes();
 
     if (difficulty) {
-      quizzes = quizzes.filter(q => q.difficulty.toUpperCase() === difficulty.toUpperCase());
+      const diffUpper = difficulty.toUpperCase();
+      quizzes = quizzes.filter(q => q.difficulty.toUpperCase() === diffUpper);
     }
 
     const summary = quizzes.map(q => ({
@@ -42,8 +34,7 @@ export const getAllQuizzes = (req, res, next) => {
 export const getQuizBySlug = (req, res, next) => {
   try {
     const { slug } = req.params;
-    const quizzes = readJSON(quizPath);
-    const quiz = quizzes.find(q => q.slug.toLowerCase() === slug.toLowerCase());
+    const quiz = seedStore.getQuizBySlug(slug);
 
     if (!quiz) {
       return res.status(404).json({
@@ -63,7 +54,7 @@ export const getQuizBySlug = (req, res, next) => {
 
 export const getAllSimulations = (req, res, next) => {
   try {
-    const simulations = readJSON(simulationPath);
+    const simulations = seedStore.getRawSimulations();
     res.json({
       success: true,
       data: simulations,
@@ -77,8 +68,7 @@ export const getAllSimulations = (req, res, next) => {
 export const getSimulationBySlug = (req, res, next) => {
   try {
     const { slug } = req.params;
-    const simulations = readJSON(simulationPath);
-    const sim = simulations.find(s => s.slug.toLowerCase() === slug.toLowerCase());
+    const sim = seedStore.getSimulationBySlug(slug);
 
     if (!sim) {
       return res.status(404).json({
@@ -98,7 +88,7 @@ export const getSimulationBySlug = (req, res, next) => {
 
 export const getDailyChallenge = (req, res, next) => {
   try {
-    const quizzes = readJSON(quizPath);
+    const quizzes = seedStore.getRawQuizzes();
     // Flatten all questions
     const allQuestions = [];
     quizzes.forEach(q => {

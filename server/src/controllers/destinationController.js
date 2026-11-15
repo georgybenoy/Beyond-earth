@@ -1,31 +1,8 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const destinationsPath = path.join(__dirname, '../../data/destinations_seeds.json');
-const hardwarePath = path.join(__dirname, '../../data/hardware_seeds.json');
-
-const readJSON = (filePath) => JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+import { seedStore } from '../data/seedStore.js';
 
 export const getAllDestinations = (req, res, next) => {
   try {
-    const destinations = readJSON(destinationsPath);
-    const hardware = readJSON(hardwarePath);
-
-    // Enrich each destination with counts of resident and flyby visiting hardware
-    const enriched = destinations.map((dest) => {
-      const residentHardware = hardware.filter(
-        (h) => h.destination_slug === dest.slug || (h.visited_destination_slugs && h.visited_destination_slugs.includes(dest.slug))
-      );
-      const activeCount = residentHardware.filter((h) => h.operational_status === 'OPERATIONAL').length;
-      return {
-        ...dest,
-        hardware_count: residentHardware.length,
-        active_hardware_count: activeCount
-      };
-    });
+    const enriched = seedStore.getEnrichedDestinations();
 
     res.json({
       success: true,
@@ -40,10 +17,8 @@ export const getAllDestinations = (req, res, next) => {
 export const getDestinationBySlug = (req, res, next) => {
   try {
     const { slug } = req.params;
-    const destinations = readJSON(destinationsPath);
-    const hardware = readJSON(hardwarePath);
+    const destination = seedStore.getDestinationBySlug(slug);
 
-    const destination = destinations.find((d) => d.slug.toLowerCase() === slug.toLowerCase());
     if (!destination) {
       return res.status(404).json({
         success: false,
@@ -51,6 +26,7 @@ export const getDestinationBySlug = (req, res, next) => {
       });
     }
 
+    const hardware = seedStore.getRawHardware();
     const residentHardware = hardware.filter(
       (h) => h.destination_slug === destination.slug || (h.visited_destination_slugs && h.visited_destination_slugs.includes(destination.slug))
     );

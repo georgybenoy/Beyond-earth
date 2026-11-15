@@ -1,23 +1,15 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { seedStore } from '../data/seedStore.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const hardwarePath = path.join(__dirname, '../../data/hardware_seeds.json');
-const destinationsPath = path.join(__dirname, '../../data/destinations_seeds.json');
-
-const readJSON = (filePath) => JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+const ALLOWED_SORT_FIELDS = ['name', 'launch_date', 'operational_status', 'mass_kg', 'category'];
 
 export const getAllHardware = (req, res, next) => {
   try {
     const { status, destination, category, search, featured, sort } = req.query;
-    let hardware = readJSON(hardwarePath);
-    const destinations = readJSON(destinationsPath);
+    const rawHardware = seedStore.getRawHardware();
+    const destMap = seedStore.getDestMap();
 
     // Map destination names for quick frontend display
-    const destMap = Object.fromEntries(destinations.map(d => [d.slug, d.name]));
-    hardware = hardware.map(item => ({
+    let hardware = rawHardware.map(item => ({
       ...item,
       destination_name: destMap[item.destination_slug] || item.destination_slug
     }));
@@ -30,12 +22,14 @@ export const getAllHardware = (req, res, next) => {
 
     // Filter by destination slug
     if (destination) {
-      hardware = hardware.filter(h => h.destination_slug.toLowerCase() === destination.toLowerCase());
+      const destLower = destination.toLowerCase();
+      hardware = hardware.filter(h => h.destination_slug.toLowerCase() === destLower);
     }
 
-    // Filter by hardware category (ROVER, LANDER, ORBITER, DEEP_SPACE_PROBE)
+    // Filter by hardware category (ROVER, LANDER, ORBITER, DEEP_SPACE_PROBE, OBSERVATORY)
     if (category) {
-      hardware = hardware.filter(h => h.category.toLowerCase() === category.toLowerCase());
+      const catLower = category.toLowerCase();
+      hardware = hardware.filter(h => h.category.toLowerCase() === catLower);
     }
 
     // Filter by featured
@@ -43,26 +37,31 @@ export const getAllHardware = (req, res, next) => {
       hardware = hardware.filter(h => h.is_featured === true);
     }
 
-    // Text search on name, purpose, or historical significance
+    // Text search on name, purpose, historical significance, or destination name
     if (search) {
       const q = search.toLowerCase();
       hardware = hardware.filter(h =>
         h.name.toLowerCase().includes(q) ||
-        h.mission_purpose.toLowerCase().includes(q) ||
-        h.historical_significance.toLowerCase().includes(q) ||
+        (h.mission_purpose && h.mission_purpose.toLowerCase().includes(q)) ||
+        (h.historical_significance && h.historical_significance.toLowerCase().includes(q)) ||
         (h.destination_name && h.destination_name.toLowerCase().includes(q))
       );
     }
 
-    // Sorting
+    // Safe sorting with field allowlist
     if (sort) {
       const [field, direction] = sort.split(':');
-      const order = direction === 'desc' ? -1 : 1;
-      hardware.sort((a, b) => {
-        if (a[field] < b[field]) return -1 * order;
-        if (a[field] > b[field]) return 1 * order;
-        return 0;
-      });
+      if (ALLOWED_SORT_FIELDS.includes(field)) {
+        const order = direction === 'desc' ? -1 : 1;
+        hardware.sort((a, b) => {
+          if (field === 'launch_date') {
+            return (new Date(a.launch_date) - new Date(b.launch_date)) * order;
+          }
+          if (a[field] < b[field]) return -1 * order;
+          if (a[field] > b[field]) return 1 * order;
+          return 0;
+        });
+      }
     } else {
       // Default: sort by launch date ascending (chronological exploration)
       hardware.sort((a, b) => new Date(a.launch_date) - new Date(b.launch_date));
@@ -84,10 +83,8 @@ export const getAllHardware = (req, res, next) => {
 export const getHardwareBySlug = (req, res, next) => {
   try {
     const { slug } = req.params;
-    const hardware = readJSON(hardwarePath);
-    const destinations = readJSON(destinationsPath);
+    const item = seedStore.getHardwareBySlug(slug);
 
-    const item = hardware.find(h => h.slug.toLowerCase() === slug.toLowerCase());
     if (!item) {
       return res.status(404).json({
         success: false,
@@ -95,12 +92,12 @@ export const getHardwareBySlug = (req, res, next) => {
       });
     }
 
-    const destination = destinations.find(d => d.slug === item.destination_slug);
-    const destMap = Object.fromEntries(destinations.map(d => [d.slug, d.name]));
+    const destination = seedStore.getDestinationBySlug(item.destination_slug);
+    const destMap = seedStore.getDestMap();
 
     // Resolve sibling missions
     const relatedMissions = (item.related_mission_slugs || [])
-      .map(s => hardware.find(h => h.slug === s))
+      .map(s => seedStore.getHardwareBySlug(s))
       .filter(Boolean)
       .map(h => ({
         slug: h.slug,
@@ -127,8 +124,14 @@ export const getHardwareBySlug = (req, res, next) => {
 
 export const getFeaturedHardware = (req, res, next) => {
   try {
-    const hardware = readJSON(hardwarePath);
-    const featured = hardware.filter(h => h.is_featured);
+    const hardware = seedStore.getRawHardware();
+    const destMap = seedStore.getDestMap();
+    const featured = hardware
+      .filter(h => h.is_featured)
+      .map(h => ({
+        ...h,
+        destination_name: destMap[h.destination_slug] || h.destination_slug
+      }));
 
     res.json({
       success: true,

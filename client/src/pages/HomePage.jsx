@@ -18,17 +18,22 @@ import StatusBadge from '../components/common/StatusBadge';
 export default function HomePage() {
   const [featured, setFeatured] = useState([]);
   const [statusSummary, setStatusSummary] = useState(null);
+  const [destinationsCount, setDestinationsCount] = useState(13);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [featuredData, summaryData] = await Promise.all([
+        const [featuredData, summaryData, destsData] = await Promise.all([
           api.getFeaturedHardware(),
-          api.getStatusSummary()
+          api.getStatusSummary(),
+          api.getDestinations()
         ]);
         setFeatured(featuredData || []);
         setStatusSummary(summaryData);
+        if (destsData && destsData.length > 0) {
+          setDestinationsCount(destsData.length);
+        }
       } catch (err) {
         console.error('Failed to load home data:', err);
       } finally {
@@ -39,8 +44,16 @@ export default function HomePage() {
   }, []);
 
   const stats = [
-    { label: 'Hardware Tracked', value: '16 Missions', sub: 'Across 12 Celestial Bodies' },
-    { label: 'Active in Flight', value: statusSummary ? `${statusSummary.counts.OPERATIONAL} Probes` : '7 Active', sub: 'Transmitting Science Data' },
+    { 
+      label: 'Hardware Tracked', 
+      value: statusSummary ? `${statusSummary.counts.TOTAL_TRACKED} Missions` : '18 Missions', 
+      sub: `Across ${destinationsCount} Celestial Bodies` 
+    },
+    { 
+      label: 'Active in Flight', 
+      value: statusSummary ? `${statusSummary.counts.OPERATIONAL} Probes` : '7 Active', 
+      sub: 'Transmitting Science Data' 
+    },
     { label: 'Farthest Machine', value: '24.7B km', sub: 'Voyager 1 in Interstellar Space' },
     { label: 'Historical Span', value: '1960 – Present', sub: '60+ Years of Exploration' },
   ];

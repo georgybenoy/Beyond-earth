@@ -282,6 +282,7 @@ export default function SolarSystemCanvas({
     <CanvasErrorBoundary onFallback={onFallback}>
       <div className="w-full h-[420px] sm:h-[500px] lg:h-[680px] rounded-3xl overflow-hidden glass-panel border border-space-border relative">
         <Canvas
+          dpr={[1, 1.75]}
           camera={{ position: [0, 150, 220], fov: 45, near: 0.1, far: 2000 }}
           gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
         >

@@ -60,6 +60,13 @@ export default function AsteroidBelt({
     return { geometry: geo, colors: colorPalette, dummy: d };
   }, []);
 
+  // Dispose geometry on unmount to prevent WebGL memory leaks
+  useEffect(() => {
+    return () => {
+      geometry.dispose();
+    };
+  }, [geometry]);
+
   // Initialize instanced matrices and randomized vertex colors once on mount
   useEffect(() => {
     if (!instancedMeshRef.current) return;
